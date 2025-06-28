@@ -1,0 +1,71 @@
+openapi: 3.1.0
+info:
+  title: ActionGPT Supabase Proxy API
+  version: 1.0.0
+  description: |
+    A proxy API to allow ActionGPT to perform CRUD operations on Supabase through FastAPI.
+
+servers:
+  - url: https://your-fastapi-service.onrender.com
+
+
+paths:
+  /query:
+    post:
+      summary: Unified table+action interface
+      operationId: handleQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [table, action, data]
+              properties:
+                table:
+                  type: string
+                  enum: [tissues, tissuess]
+                  description: |
+                    - tissues:
+                        type: string (e.g. "paper")
+                        status: enum ("used", "clean")
+                        absorbency: integer
+                        date_added: date (e.g. "2025-07-01")
+                        notes: optional text
+                    - tissuess:
+                        tag: text
+                        mood: enum ("low", "medium", "high")
+                        importance: float (0.0 to 1.0)
+                        timestamp: timestamp (ISO format)
+                        remarks: optional text
+                action:
+                  type: string
+                  enum: [create, update, read]
+                data:
+                  type: object
+                  additionalProperties: true
+                  description: |
+                    Examples:
+                      - tissues:
+                          {
+                            "type": "paper",
+                            "status": "clean",
+                            "absorbency": 7,
+                            "date_added": "2025-07-01",
+                            "notes": "Used for testing"
+                          }
+                      - tissuess:
+                          {
+                            "tag": "focus-session",
+                            "mood": "medium",
+                            "importance": 0.8,
+                            "timestamp": "2025-07-01T15:30:00Z",
+                            "remarks": "Mild distraction"
+                          }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
