@@ -8,6 +8,9 @@ app = FastAPI()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+print("DEBUG: SUPABASE_URL =", SUPABASE_URL)
+print("DEBUG: SUPABASE_KEY present?", bool(SUPABASE_KEY))
+
 @app.post("/action")
 async def action_handler(request: Request):
     body = await request.json()
