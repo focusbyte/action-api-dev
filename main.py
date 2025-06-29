@@ -50,7 +50,7 @@ async def action_handler(request: Request):
         # Join into query string
         query_string = "&".join(params)
         full_url = f"{url}?{query_string}"
-    r   esponse = requests.get(full_url, headers=headers)
+        response = requests.get(full_url, headers=headers)
     elif action == "update":
         id = payload.pop("id", None)
         if not id:
