@@ -52,4 +52,9 @@ async def action_handler(request: Request):
     else:
         return JSONResponse(status_code=400, content={"error": "Invalid action"})
 
-    return JSONResponse(status_code=response.status_code, content=response.json())
+    try:
+        json_response = response.json()
+    except ValueError:
+        json_response = {"raw": response.text or "No content returned from Supabase"}
+
+    return JSONResponse(status_code=response.status_code, content=json_response)
