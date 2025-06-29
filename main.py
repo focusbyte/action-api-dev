@@ -5,10 +5,12 @@ import os
 from dotenv import load_dotenv
 import logging
 
+# Load .env
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# App init
 app = FastAPI()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -16,6 +18,10 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 logger.info(f"SUPABASE_URL = {SUPABASE_URL}")
 logger.info(f"SUPABASE_KEY present? {bool(SUPABASE_KEY)}")
+
+@app.get("/hello")
+async def hello():
+    return {"status": "OK"}
 
 @app.post("/action")
 async def action_handler(request: Request):
@@ -30,7 +36,8 @@ async def action_handler(request: Request):
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"  # ✅ Ask Supabase to return the inserted/updated row
     }
 
     url = f"{SUPABASE_URL}/rest/v1/{table}"
@@ -52,4 +59,14 @@ async def action_handler(request: Request):
     else:
         return JSONResponse(status_code=400, content={"error": "Invalid action"})
 
-    return JSONResponse(status_code=response.status_code, content=response.json())
+    try:
+        json_response = response.json()
+    except Exception as e:
+        json_response = {
+            "error": "Supabase did not return valid JSON",
+            "status_code": response.status_code,
+            "text": response.text,
+            "details": str(e)
+        }
+
+    return JSONResponse(status_code=response.status_code, content=json_response)
