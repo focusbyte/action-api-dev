@@ -5,24 +5,30 @@ import os
 from dotenv import load_dotenv
 import logging
 
-# Load .env
+# Load environment variables
 load_dotenv()
+
+# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# App init
+# Initialize FastAPI app
 app = FastAPI()
 
+# Retrieve Supabase credentials
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+# Log the presence of keys
 logger.info(f"SUPABASE_URL = {SUPABASE_URL}")
 logger.info(f"SUPABASE_KEY present? {bool(SUPABASE_KEY)}")
 
+# Health check endpoint
 @app.get("/hello")
 async def hello():
     return {"status": "OK"}
 
+# Action endpoint for CRUD
 @app.post("/action")
 async def action_handler(request: Request):
     body = await request.json()
@@ -37,30 +43,35 @@ async def action_handler(request: Request):
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "Content-Type": "application/json",
-        "Prefer": "return=representation"  # ✅ Ask Supabase to return the inserted/updated row
+        "Prefer": "return=representation"
     }
 
     url = f"{SUPABASE_URL}/rest/v1/{table}"
 
     if action == "create":
         response = requests.post(url, json=payload, headers=headers)
+
     elif action == "read":
-        # Convert payload into Supabase filter syntax (e.g., {"status": "clean"} → "status=eq.clean")
-        params = {f"{k}=eq.{v}" for k, v in payload.items()}
-        # Join into query string
-        query_string = "&".join(params)
-        full_url = f"{url}?{query_string}"
-        response = requests.get(full_url, headers=headers)
+        try:
+            params = {f"{k}=eq.{v}" for k, v in payload.items()}
+            query_string = "&".join(params)
+            full_url = f"{url}?{query_string}"
+            response = requests.get(full_url, headers=headers)
+        except Exception as e:
+            return JSONResponse(status_code=400, content={"error": f"Invalid read parameters: {str(e)}"})
+
     elif action == "update":
         id = payload.pop("id", None)
         if not id:
             return JSONResponse(status_code=400, content={"error": "Missing 'id' for update"})
         response = requests.patch(f"{url}?id=eq.{id}", json=payload, headers=headers)
+
     elif action == "delete":
         id = payload.get("id")
         if not id:
             return JSONResponse(status_code=400, content={"error": "Missing 'id' for delete"})
         response = requests.delete(f"{url}?id=eq.{id}", headers=headers)
+
     else:
         return JSONResponse(status_code=400, content={"error": "Invalid action"})
 
