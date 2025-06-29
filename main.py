@@ -2,14 +2,20 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import requests
 import os
+from dotenv import load_dotenv
+import logging
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-print("DEBUG: SUPABASE_URL =", SUPABASE_URL)
-print("DEBUG: SUPABASE_KEY present?", bool(SUPABASE_KEY))
+logger.info(f"SUPABASE_URL = {SUPABASE_URL}")
+logger.info(f"SUPABASE_KEY present? {bool(SUPABASE_KEY)}")
 
 @app.post("/action")
 async def action_handler(request: Request):
