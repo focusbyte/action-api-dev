@@ -1,60 +1,19 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-import requests
-import os
-from dotenv import load_dotenv
+from fastapi import FastAPI
 import logging
 
-load_dotenv()
+# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Create the app
 app = FastAPI()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+# Log on startup
+@app.on_event("startup")
+async def startup_event():
+    logger.info("🚀 FastAPI app has started.")
 
-logger.info(f"SUPABASE_URL = {SUPABASE_URL}")
-logger.info(f"SUPABASE_KEY present? {bool(SUPABASE_KEY)}")
-
-@app.post("/action")
-async def action_handler(request: Request):
-    body = await request.json()
-    table = body.get("table")
-    action = body.get("action")
-    payload = body.get("payload")
-
-    if not table or not action or not payload:
-        return JSONResponse(status_code=400, content={"error": "Missing required fields"})
-
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    url = f"{SUPABASE_URL}/rest/v1/{table}"
-
-    if action == "create":
-        response = requests.post(url, json=payload, headers=headers)
-    elif action == "read":
-        response = requests.get(url, headers=headers, params=payload)
-    elif action == "update":
-        id = payload.pop("id", None)
-        if not id:
-            return JSONResponse(status_code=400, content={"error": "Missing 'id' for update"})
-        response = requests.patch(f"{url}?id=eq.{id}", json=payload, headers=headers)
-    elif action == "delete":
-        id = payload.get("id")
-        if not id:
-            return JSONResponse(status_code=400, content={"error": "Missing 'id' for delete"})
-        response = requests.delete(f"{url}?id=eq.{id}", headers=headers)
-    else:
-        return JSONResponse(status_code=400, content={"error": "Invalid action"})
-
-    try:
-        json_response = response.json()
-    except ValueError:
-        json_response = {"raw": response.text or "No content returned from Supabase"}
-
-    return JSONResponse(status_code=response.status_code, content=json_response)
+# Simple GET route
+@app.get("/hello")
+async def hello():
+    return {"message": "Hello, world!"}
