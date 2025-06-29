@@ -54,9 +54,18 @@ async def action_handler(request: Request):
 
     elif action == "read":
         try:
-            params = {f"{k}=eq.{v}" for k, v in payload.items()}
-            query_string = "&".join(params)
-            full_url = f"{url}?{query_string}"
+            sort = payload.pop("sort", None)
+            limit = payload.pop("limit", None)
+
+            filters = [f"{k}=eq.{v}" for k, v in payload.items()]
+            query = "&".join(filters)
+
+            if sort:
+                query += f"&order={sort}"
+            if limit:
+                query += f"&limit={limit}"
+
+            full_url = f"{url}?{query}" if query else url
             response = requests.get(full_url, headers=headers)
         except Exception as e:
             return JSONResponse(status_code=400, content={"error": f"Invalid read parameters: {str(e)}"})
