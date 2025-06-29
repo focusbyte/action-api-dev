@@ -32,6 +32,7 @@ async def hello():
 @app.post("/action")
 async def action_handler(request: Request):
     body = await request.json()
+    logger.info(body)
     table = body.get("table")
     action = body.get("action")
     payload = body.get("payload")
