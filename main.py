@@ -53,6 +53,49 @@ def validate_limit(limit):
     return None
 
 
+def validate_component(action: str, component: str):
+    if not component:
+        return (
+            "❌ Missing required field: 'payload.component'. "
+            "Please specify the schema name, e.g. 'TissuesReadPayload'."
+        )
+
+    expected_components = {
+        "read": "TissuesReadPayload",
+        "create": "TissuesCreatePayload",
+        "update": "TissuesUpdatePayload",
+        "delete": "TissuesDeletePayload"
+    }
+
+    expected = expected_components.get(action)
+    if expected and component != expected:
+        return (
+            f"❌ You used 'component: {component}' for action '{action}', but this does not match the expected schema '{expected}'. "
+            f"💡 To fix this, use the correct schema fields defined in '#/components/schemas/{expected}' — not just the component name."
+        )
+
+    return None  # ✅ Valid
+
+def validate_payload_fields(action: str, payload: dict):
+    allowed_fields = {
+        "read": {"component", "status", "type", "absorbency", "date_added", "notes", "sort", "limit"},
+        "create": {"component", "status", "type", "absorbency", "date_added", "notes"},
+        "update": {"component", "id", "status", "type", "absorbency", "date_added", "notes"},
+        "delete": {"component", "id"}
+    }
+
+    allowed = allowed_fields.get(action, set())
+    extra = set(payload.keys()) - allowed
+
+    if extra:
+        return (
+            f"❌ Unexpected fields in payload for action '{action}': {', '.join(extra)}. "
+            f"💡 These fields do not belong in a '{action}' request or do not match the expected schema."
+        )
+
+    return None
+
+
 # Initialize FastAPI app
 app = FastAPI()
 
@@ -90,6 +133,19 @@ async def action_handler(request: Request):
 
     url = f"{SUPABASE_URL}/rest/v1/{table}"
 
+    component = payload.get("component")
+
+    # ✅ Validate component string for this action
+    component_error = validate_component(action, component)
+    if component_error:
+        return JSONResponse(status_code=400, content={"error": component_error})
+
+    # ✅ Validate allowed fields in the payload
+    field_error = validate_payload_fields(action, payload)
+    if field_error:
+        return JSONResponse(status_code=400, content={"error": field_error})
+
+    
     if action == "create":
         response = requests.post(url, json=payload, headers=headers)
 
@@ -103,7 +159,6 @@ async def action_handler(request: Request):
                     
             limit = payload.pop("limit", None)
 
-            limit = payload.pop("limit", None)
 
             if limit is None:
                 limit = 50  # sensible default for LLM use
