@@ -45,7 +45,12 @@ async def action_handler(request: Request):
     if action == "create":
         response = requests.post(url, json=payload, headers=headers)
     elif action == "read":
-        response = requests.get(url, headers=headers, params=payload)
+        # Convert payload into Supabase filter syntax (e.g., {"status": "clean"} → "status=eq.clean")
+        params = {f"{k}=eq.{v}" for k, v in payload.items()}
+        # Join into query string
+        query_string = "&".join(params)
+        full_url = f"{url}?{query_string}"
+    r   esponse = requests.get(full_url, headers=headers)
     elif action == "update":
         id = payload.pop("id", None)
         if not id:
