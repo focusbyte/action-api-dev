@@ -44,6 +44,15 @@ def validate_sort(sort: str):
 
     return None  # ✅ Valid sort
 
+
+def validate_limit(limit):
+    if not isinstance(limit, int):
+        return f"❌ 'limit' must be an integer. You provided: {type(limit).__name__}."
+    if not (1 <= limit <= 1000):
+        return f"❌ 'limit' must be between 1 and 1000. You provided: {limit}."
+    return None
+
+
 # Initialize FastAPI app
 app = FastAPI()
 
@@ -91,7 +100,17 @@ async def action_handler(request: Request):
                 sort_error = validate_sort(sort)
                 if sort_error:
                     return JSONResponse(status_code=400, content={"error": sort_error})
+                    
             limit = payload.pop("limit", None)
+
+            limit = payload.pop("limit", None)
+
+            if limit is None:
+                limit = 50  # sensible default for LLM use
+            else:
+                limit_error = validate_limit(limit)
+                if limit_error:
+                    return JSONResponse(status_code=400, content={"error": limit_error})
 
             filters = [f"{k}=eq.{v}" for k, v in payload.items()]
             query = "&".join(filters)
