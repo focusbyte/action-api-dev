@@ -37,7 +37,7 @@ async def action_handler(request: Request):
     action = body.get("action")
     payload = body.get("payload")
 
-    if not table or not action or not payload:
+    if not table or not action or payload is None:
         return JSONResponse(status_code=400, content={"error": "Missing required fields"})
 
     headers = {
