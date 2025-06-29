@@ -12,6 +12,38 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def validate_sort(sort: str):
+    if not isinstance(sort, str):
+        return (
+            f"❌ The 'sort' value must be a string. "
+            f"You provided a value of type: {type(sort).__name__}. "
+            f"Expected format: 'column.asc' or 'column.desc'."
+        )
+
+    if '.' not in sort:
+        return (
+            f"❌ The 'sort' value '{sort}' is invalid — it is missing the required '.asc' or '.desc' suffix. "
+            f"✅ Correct usage: 'absorbency.asc', 'date_added.desc'. "
+            f"💡 Format must be: '<column>.<direction>' with no spaces."
+        )
+
+    if not sort.endswith((".asc", ".desc")):
+        return (
+            f"❌ The 'sort' value '{sort}' must end with '.asc' or '.desc'. "
+            f"✅ Valid examples: 'type.asc', 'date_added.desc'. "
+            f"⚠️ Avoid formats like 'absorbency', 'absorbency descending', or 'absorbency-desc'."
+        )
+
+    column_name = sort.split('.')[0]
+    if not column_name.isidentifier():
+        return (
+            f"❌ Invalid column name '{column_name}' in the 'sort' value. "
+            f"Column names must start with a letter or underscore, and contain only letters, digits, or underscores. "
+            f"💡 Example: 'absorbency.asc'"
+        )
+
+    return None  # ✅ Valid sort
+
 # Initialize FastAPI app
 app = FastAPI()
 
@@ -55,6 +87,10 @@ async def action_handler(request: Request):
     elif action == "read":
         try:
             sort = payload.pop("sort", None)
+            if sort:
+                sort_error = validate_sort(sort)
+                if sort_error:
+                    return JSONResponse(status_code=400, content={"error": sort_error})
             limit = payload.pop("limit", None)
 
             filters = [f"{k}=eq.{v}" for k, v in payload.items()]
