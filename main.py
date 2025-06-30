@@ -140,6 +140,8 @@ async def action_handler(request: Request):
     if component_error:
         return JSONResponse(status_code=400, content={"error": component_error})
 
+    payload.pop("component", None)  # ✅ Clean before sending to Supabase
+
     # ✅ Validate allowed fields in the payload
     field_error = validate_payload_fields(action, payload)
     if field_error:
