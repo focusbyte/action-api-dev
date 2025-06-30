@@ -179,6 +179,23 @@ async def action_handler(request: Request):
 
             full_url = f"{url}?{query}" if query else url
             response = requests.get(full_url, headers=headers)
+
+            try:
+                json_response = response.json()
+                if isinstance(json_response, list) and len(json_response) == 0:
+                    return JSONResponse(status_code=200, content={
+                        "message": (
+                            "No matching rows found for the given filters.\n"
+                            "⚠️ All fields in the payload are optional — include only the ones you want to filter by.\n"
+                            "❗ Avoid using blank strings, 0, or defaults unless you explicitly want to filter by them.\n"
+                            "💡 Try again with a simpler or more targeted filter.\n"
+                            "📌 Remember to always include the correct `component` in your payload."
+                        )
+                    })
+            except Exception as e:
+                return JSONResponse(status_code=400, content={"error": f"Failed to parse Supabase response: {str(e)}"})
+
+        
         except Exception as e:
             return JSONResponse(status_code=400, content={"error": f"Invalid read parameters: {str(e)}"})
 
